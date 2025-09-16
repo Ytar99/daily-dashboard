@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Character</title>
     <link rel="stylesheet" href="./character.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&family=Pixelify+Sans:wght@400..700&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <div class="app">
@@ -12,94 +18,107 @@
         <div class="header">
           <div class="character-name">Алтана Грациозная</div>
           <div class="character-title">Верховная танцовщица</div>
+          <div class="character-level">Уровень 80</div>
         </div>
 
-        <div class="equipment">
-          <div class="equipment-slot">
-            <div class="slot-name">Шлем</div>
-            <div class="slot-content">🎀</div>
-          </div>
-          <div class="equipment-slot">
-            <div class="slot-name">Наплечники</div>
-            <div class="slot-content">🐈‍⬛</div>
-          </div>
-          <div class="equipment-slot">
-            <div class="slot-name">Кираса</div>
-            <div class="slot-content">👗</div>
-          </div>
-          <div class="equipment-slot">
-            <div class="slot-name">Перчатки</div>
-            <div class="slot-content">🧤</div>
-          </div>
-          <div class="equipment-slot">
-            <div class="slot-name">Пояс</div>
-            <div class="slot-content">⛓️</div>
-          </div>
-          <div class="equipment-slot">
-            <div class="slot-name">Поножи</div>
-            <div class="slot-content">🦵</div>
-          </div>
-          <div class="equipment-slot">
-            <div class="slot-name">Сапоги</div>
-            <div class="slot-content">👢</div>
-          </div>
-          <div class="equipment-slot">
-            <div class="slot-name">Оружие</div>
-            <div class="slot-content">🪭</div>
-          </div>
-        </div>
-
-        <div class="character">
-          <div class="character-image">
-            <img src="./images/avatar.png" alt="Персонаж" />
-          </div>
-          <div class="health-bar">
-            <div class="health-fill"></div>
-            <div class="bar-text">Здоровье: 325/430</div>
-          </div>
-          <div class="mana-bar">
-            <div class="mana-fill"></div>
-            <div class="bar-text">Мана: 210/350</div>
-          </div>
-          <div class="exp-bar">
-            <div class="exp-fill"></div>
-            <div class="bar-text">Опыт: 12450/30000</div>
+        <div class="main-content">
+          <div class="column">
+            <h2 class="section-title">Экипировка</h2>
+            <div class="equipment">
+              <div class="equipment-slot">
+                <div class="slot-name">Шлем</div>
+                <div class="slot-content">🎀</div>
+              </div>
+              <div class="equipment-slot">
+                <div class="slot-name">Наплечники</div>
+                <div class="slot-content">🐈‍⬛</div>
+              </div>
+              <div class="equipment-slot">
+                <div class="slot-name">Кираса</div>
+                <div class="slot-content">👗</div>
+              </div>
+              <div class="equipment-slot">
+                <div class="slot-name">Перчатки</div>
+                <div class="slot-content">🧤</div>
+              </div>
+              <div class="equipment-slot">
+                <div class="slot-name">Пояс</div>
+                <div class="slot-content">⛓️</div>
+              </div>
+              <div class="equipment-slot">
+                <div class="slot-name">Поножи</div>
+                <div class="slot-content">🦵</div>
+              </div>
+              <div class="equipment-slot">
+                <div class="slot-name">Сапоги</div>
+                <div class="slot-content">👢</div>
+              </div>
+              <div class="equipment-slot">
+                <div class="slot-name">Оружие</div>
+                <div class="slot-content">🪭</div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="stats">
-          <div class="stats-title">Характеристики</div>
-          <div class="stat">
-            <span class="stat-name">Сила:</span>
-            <span class="stat-value">42</span>
+        <div class="column-center">
+          <div class="character-card">
+            <div class="character-image">
+              <img src="./images/avatar.png" alt="Персонаж" />
+            </div>
+
+            <div class="indicators">
+              <div class="health-bar">
+                <div class="health-fill"></div>
+                <div class="bar-text">Здоровье: 325/430</div>
+              </div>
+              <div class="mana-bar">
+                <div class="mana-fill"></div>
+                <div class="bar-text">Мана: 210/350</div>
+              </div>
+              <div class="exp-bar">
+                <div class="exp-fill"></div>
+                <div class="bar-text">Опыт: 12450/30000</div>
+              </div>
+            </div>
           </div>
-          <div class="stat">
-            <span class="stat-name">Ловкость:</span>
-            <span class="stat-value">83</span>
-          </div>
-          <div class="stat">
-            <span class="stat-name">Интеллект:</span>
-            <span class="stat-value">95</span>
-          </div>
-          <div class="stat">
-            <span class="stat-name">Выносливость:</span>
-            <span class="stat-value">65</span>
-          </div>
-          <div class="stat">
-            <span class="stat-name">Мудрость:</span>
-            <span class="stat-value">88</span>
-          </div>
-          <div class="stat">
-            <span class="stat-name">Удача:</span>
-            <span class="stat-value">72</span>
-          </div>
-          <div class="stat">
-            <span class="stat-name">Защита:</span>
-            <span class="stat-value">125</span>
-          </div>
-          <div class="stat">
-            <span class="stat-name">Маг. урон:</span>
-            <span class="stat-value">210-285</span>
+        </div>
+
+        <div class="column">
+          <div class="stats">
+            <div class="stats-title">Характеристики</div>
+            <div class="stat">
+              <span class="stat-name">Сила:</span>
+              <span class="stat-value">42</span>
+            </div>
+            <div class="stat">
+              <span class="stat-name">Ловкость:</span>
+              <span class="stat-value">83</span>
+            </div>
+            <div class="stat">
+              <span class="stat-name">Интеллект:</span>
+              <span class="stat-value">95</span>
+            </div>
+            <div class="stat">
+              <span class="stat-name">Выносливость:</span>
+              <span class="stat-value">65</span>
+            </div>
+            <div class="stat">
+              <span class="stat-name">Мудрость:</span>
+              <span class="stat-value">88</span>
+            </div>
+            <div class="stat">
+              <span class="stat-name">Удача:</span>
+              <span class="stat-value">72</span>
+            </div>
+            <div class="stat">
+              <span class="stat-name">Защита:</span>
+              <span class="stat-value">125</span>
+            </div>
+            <div class="stat">
+              <span class="stat-name">Маг. урон:</span>
+              <span class="stat-value">210-285</span>
+            </div>
           </div>
         </div>
 
