@@ -1,0 +1,68 @@
+:root {
+  /* Общие переменные */
+  --border-radius: 8px;
+  --transition-speed: 0.3s;
+
+  /* Переменные светлой темы (по умолчанию) */
+  --bg-primary: #f5f5f5;
+  --bg-secondary: #ffffff;
+  --bg-widget: #ffffff;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --accent-color: #4caf50;
+  --accent-hover: #45a049;
+  --border-color: #dddddd;
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --modal-bg: rgba(0, 0, 0, 0.5);
+  --widget-header-border: #eeeeee;
+  --btn-hover: #f0f0f0;
+  --resize-handle: #cccccc;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2d2d2d;
+  --bg-widget: #2d2d2d;
+  --text-primary: #f0f0f0;
+  --text-secondary: #aaaaaa;
+  --accent-color: #388e3c;
+  --accent-hover: #2e7d32;
+  --border-color: #444444;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --modal-bg: rgba(0, 0, 0, 0.7);
+  --widget-header-border: #444444;
+  --btn-hover: #3d3d3d;
+  --resize-handle: #555555;
+}
+
+[data-theme="blue"] {
+  --bg-primary: #e6f7ff;
+  --bg-secondary: #ffffff;
+  --bg-widget: #ffffff;
+  --text-primary: #003366;
+  --text-secondary: #0066cc;
+  --accent-color: #1890ff;
+  --accent-hover: #40a9ff;
+  --border-color: #91d5ff;
+  --shadow-color: rgba(24, 144, 255, 0.2);
+  --modal-bg: rgba(0, 0, 0, 0.5);
+  --widget-header-border: #e6f7ff;
+  --btn-hover: #e6f7ff;
+  --resize-handle: #91d5ff;
+}
+
+[data-theme="green"] {
+  --bg-primary: #f6ffed;
+  --bg-secondary: #ffffff;
+  --bg-widget: #ffffff;
+  --text-primary: #092b00;
+  --text-secondary: #52c41a;
+  --accent-color: #52c41a;
+  --accent-hover: #73d13d;
+  --border-color: #b7eb8f;
+  --shadow-color: rgba(82, 196, 26, 0.2);
+  --modal-bg: rgba(0, 0, 0, 0.5);
+  --widget-header-border: #f6ffed;
+  --btn-hover: #f6ffed;
+  --resize-handle: #b7eb8f;
+}

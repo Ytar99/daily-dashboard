@@ -1,33 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="stylesheet" href="/src/styles/index.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <title>Daily Dashboard</title>
+
+    <script>
+      const savedTheme = localStorage.getItem("dashboard-theme");
+      const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+      if (savedTheme) {
+        document.documentElement.setAttribute("data-theme", savedTheme);
+      } else if (systemPrefersDark) {
+        document.documentElement.setAttribute("data-theme", "dark");
+        localStorage.setItem("dashboard-theme", "dark");
+      }
+    </script>
   </head>
   <body>
-    <div class="app">
-      <h1>Hello World</h1>
-      <p>
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Ex ad quisquam
-        aut at nisi. Illo atque porro, placeat incidunt, alias cum maxime
-        praesentium laboriosam, officia quis a perspiciatis voluptatem officiis!
-        Corrupti atque, quos sunt laboriosam at recusandae quibusdam. Unde ipsa
-        modi architecto voluptatem, molestiae autem minus id sit repellat ea
-        quae? Pariatur, exercitationem et unde animi esse perspiciatis nihil
-        voluptatibus! Voluptas voluptatum sit officia quod incidunt quaerat illo
-        nostrum placeat, dolores nihil non, iure enim ad expedita consequatur
-        vitae aperiam pariatur aliquid quisquam dolorem eaque accusantium.
-        Dignissimos, maxime? Veritatis, provident. Eum, eius illo assumenda
-        rerum in quisquam consequatur excepturi voluptatem voluptate porro
-        nobis, iure, necessitatibus nulla magnam exercitationem officia aliquam
-        dignissimos vitae? Omnis ea numquam cum optio ipsum, ex qui! Sint,
-        quibusdam. Eveniet distinctio facere reiciendis dolores facilis ducimus
-        dolor fugit sunt at doloremque, aperiam rem, nostrum officiis culpa
-        tempore praesentium saepe quasi nihil earum. Mollitia pariatur aperiam
-        ex nam?
-      </p>
-    </div>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
   </body>
 </html>
