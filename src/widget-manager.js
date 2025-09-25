@@ -18,10 +18,22 @@ export class WidgetManager {
   getAvailableWidgets() {
     return [
       {
+        type: "example",
+        name: "Пример",
+        description: "Простой пример виджета",
+        icon: "📦",
+      },
+      {
         type: "clock",
         name: "Часы",
         description: "Отображает текущее время и дату",
         icon: "⏰",
+      },
+      {
+        type: "isPalindrome",
+        name: "Проверка на палиндром",
+        description: "Проверяет, является ли строка палиндромом",
+        icon: "🔎",
       },
     ];
   }

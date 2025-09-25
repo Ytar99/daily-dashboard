@@ -1,5 +1,7 @@
 import { WidgetManager } from "./widget-manager";
 import { ClockWidget } from "./widgets/clock";
+import { PalindromeWidget } from "./widgets/isPalindrome";
+import { ExampleWidget } from "./widgets/example";
 
 export class Dashboard {
   constructor(containerId) {
@@ -9,7 +11,9 @@ export class Dashboard {
     this.widgetInstances = {}; // Хранилище экземпляров виджетов
     this.theme = localStorage.getItem("dashboard-theme") || "light";
 
+    this.widgetManager.registerWidget("example", ExampleWidget);
     this.widgetManager.registerWidget("clock", ClockWidget);
+    this.widgetManager.registerWidget("isPalindrome", PalindromeWidget);
   }
 
   init() {
