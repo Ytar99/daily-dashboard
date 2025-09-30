@@ -1,50 +1,100 @@
+import { StorageService } from "./services/storage-service";
 import { WidgetManager } from "./widget-manager";
-import { ClockWidget } from "./widgets/clock";
-import { PalindromeWidget } from "./widgets/isPalindrome";
-import { ExampleWidget } from "./widgets/example";
+import { ThemeManager } from "./theme-manager";
+import { WidgetRenderer } from "./widget-renderer";
+import { WIDGET_REGISTRY, DEFAULT_CONFIG } from "./config";
 
 export class Dashboard {
-  constructor(containerId) {
-    this.container = document.getElementById(containerId);
-    this.widgetManager = new WidgetManager();
-    this.widgets = JSON.parse(localStorage.getItem("dashboard-widgets")) || [];
-    this.widgetInstances = {}; // Хранилище экземпляров виджетов
-    this.theme = localStorage.getItem("dashboard-theme") || "light";
+  container = null;
+  config = null;
+  widgetManager = null;
+  storageService = null;
+  themeManager = null;
+  widgetRenderer = null;
+  widgets = null;
+  widgetInstances = null;
 
-    this.widgetManager.registerWidget("example", ExampleWidget);
-    this.widgetManager.registerWidget("clock", ClockWidget);
-    this.widgetManager.registerWidget("isPalindrome", PalindromeWidget);
+  constructor(containerId, options = {}) {
+    this.container = document.getElementById(containerId);
+    if (!this.container) {
+      throw new Error(`Container with id "${containerId}" not found`);
+    }
+
+    this.config = { ...DEFAULT_CONFIG, ...options };
+    this.widgetManager = options.widgetManager || new WidgetManager();
+    this.storageService = options.storageService || StorageService;
+    this.themeManager = options.themeManager || new ThemeManager(this.storageService);
+    this.widgetRenderer = options.widgetRenderer || new WidgetRenderer();
+
+    this.initializeWidgets();
+    this.setupEventListeners = this.setupEventListeners.bind(this);
   }
 
-  init() {
-    this.render();
-    this.loadWidgets();
-    this.applyTheme(this.theme);
+  async init() {
+    try {
+      await this.initializeWidgetRegistry();
+      this.render();
+      this.setupEventListeners();
+      await this.loadWidgets();
+      this.themeManager.applySavedTheme();
+
+      console.log("Dashboard initialized successfully");
+    } catch (error) {
+      console.error("Dashboard initialization failed:", error);
+      this.showFatalError(error);
+    }
+  }
+
+  async initializeWidgetRegistry() {
+    console.log("Registering widgets...");
+
+    for (const WidgetClass of WIDGET_REGISTRY) {
+      try {
+        this.widgetManager.registerWidget(WidgetClass);
+        console.log(`✓ Registered widget: ${WidgetClass.title}`);
+      } catch (error) {
+        console.warn(`✗ Failed to register widget ${WidgetClass.type}:`, error);
+      }
+    }
+  }
+
+  initializeWidgets() {
+    this.widgets = this.storageService.getArray("dashboard-widgets", []);
+    this.widgetInstances = new Map();
   }
 
   render() {
     this.container.innerHTML = this.getTemplate();
-    this.bindEvents();
+    this.applyTheme(this.themeManager.getCurrentTheme());
   }
 
   getTemplate() {
+    const currentTheme = this.themeManager.getCurrentTheme();
+
     return `
       <div class="dashboard">
         <header class="dashboard-header">
           <h1>Daily Dashboard</h1>
           <div class="header-controls">
             <select class="theme-selector" id="themeSelector">
-              <option value="light">Светлая</option>
-              <option value="dark">Темная</option>
-              <option value="blue">Синяя</option>
-              <option value="green">Зеленая</option>
+              ${this.config.themes
+                .map(
+                  (theme) =>
+                    `<option value="${theme}" ${theme === currentTheme ? "selected" : ""}>
+                  ${this.getThemeDisplayName(theme)}
+                </option>`
+                )
+                .join("")}
             </select>
             <button class="add-widget-btn" id="addWidgetBtn">
               <span>+</span> Добавить виджет
             </button>
           </div>
         </header>
-        <div class="widgets-container" id="widgetsContainer"></div>
+        
+        <div class="dashboard-content">
+          <div class="widgets-container" id="widgetsContainer"></div>
+        </div>
         
         <!-- Модальное окно добавления виджетов -->
         <div class="modal" id="widgetModal">
@@ -58,266 +108,300 @@ export class Dashboard {
     `;
   }
 
-  bindEvents() {
-    // Кнопка добавления виджета
-    document.getElementById("addWidgetBtn").addEventListener("click", () => {
-      this.openWidgetModal();
+  getThemeDisplayName(theme) {
+    const themeNames = {
+      light: "Светлая",
+      dark: "Темная",
+      blue: "Синяя",
+      green: "Зеленая",
+    };
+    return themeNames[theme] || theme;
+  }
+
+  setupEventListeners() {
+    // Делегирование событий для лучшей производительности
+    this.container.addEventListener("click", (event) => {
+      this.handleContainerClick(event);
     });
 
-    // Закрытие модального окна
-    document.querySelector(".close").addEventListener("click", () => {
-      this.closeWidgetModal();
+    this.container.addEventListener("change", (event) => {
+      if (event.target.id === "themeSelector") {
+        this.themeManager.changeTheme(event.target.value);
+      }
     });
 
-    // Закрытие модального окна при клике вне его
+    // Глобальные обработчики
     window.addEventListener("click", (event) => {
       if (event.target.id === "widgetModal") {
         this.closeWidgetModal();
       }
     });
 
-    // Выбор темы
-    document.getElementById("themeSelector").addEventListener("change", (e) => {
-      this.changeTheme(e.target.value);
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        this.closeWidgetModal();
+      }
     });
 
-    // Устанавливаем выбранную тему в селекторе
-    document.getElementById("themeSelector").value = this.theme;
+    // Обработчик изменения размера окна
+    window.addEventListener("resize", () => {
+      this.handleWindowResize();
+    });
   }
 
-  changeTheme(themeName) {
-    this.theme = themeName;
-    this.applyTheme(themeName);
-    localStorage.setItem("dashboard-theme", themeName);
+  handleContainerClick(event) {
+    const target = event.target;
+
+    if (target.id === "addWidgetBtn" || target.closest("#addWidgetBtn")) {
+      this.openWidgetModal();
+      return;
+    }
+
+    if (target.classList.contains("close") || target.closest(".close")) {
+      this.closeWidgetModal();
+      return;
+    }
+
+    if (target.closest('[data-action="remove"]')) {
+      const widgetElement = target.closest(".widget");
+      if (widgetElement) {
+        const widgetId = widgetElement.id.replace("widget-", "");
+        this.removeWidget(widgetId);
+      }
+      return;
+    }
+
+    if (target.classList.contains("widget-item") || target.closest(".widget-item")) {
+      const widgetItem = target.closest(".widget-item");
+      if (widgetItem) {
+        const type = widgetItem.dataset.type;
+        this.addWidget(type);
+        this.closeWidgetModal();
+      }
+    }
   }
 
-  applyTheme(themeName) {
-    document.documentElement.setAttribute("data-theme", themeName);
+  async loadWidgets() {
+    try {
+      console.log("Loading saved widgets:", this.widgets.length);
+
+      // Очищаем контейнер перед загрузкой
+      const widgetsContainer = document.getElementById("widgetsContainer");
+      if (widgetsContainer) {
+        widgetsContainer.innerHTML = "";
+      }
+
+      // Очищаем предыдущие экземпляры
+      this.widgetInstances.clear();
+
+      // Загружаем виджеты последовательно
+      for (const widgetConfig of this.widgets) {
+        await this.renderWidget(widgetConfig);
+      }
+
+      console.log(`Successfully loaded ${this.widgets.length} widgets`);
+    } catch (error) {
+      console.error("Failed to load widgets:", error);
+      this.showNotification("Ошибка загрузки виджетов", "error");
+    }
+  }
+
+  async renderWidget(config) {
+    try {
+      // Проверяем валидность конфигурации
+      if (!this.isValidWidgetConfig(config)) {
+        console.warn("Invalid widget config:", config);
+        this.showNotification("Неверная конфигурация виджета", "warning");
+        return;
+      }
+
+      const widgetInstance = this.widgetManager.createWidget(config.type, config.id);
+      if (!widgetInstance) {
+        throw new Error(`Тип виджета "${config.type}" не найден`);
+      }
+
+      const widgetElement = this.widgetRenderer.createWidgetElement(config, widgetInstance);
+      const widgetsContainer = document.getElementById("widgetsContainer");
+
+      if (!widgetsContainer) {
+        throw new Error("Контейнер виджетов не найден");
+      }
+
+      widgetsContainer.appendChild(widgetElement);
+      this.widgetInstances.set(config.id, widgetInstance);
+
+      // Инициализируем виджет
+      await widgetInstance.init();
+
+      // Делаем виджет интерактивным
+      this.widgetRenderer.makeWidgetInteractive(widgetElement, config.id, {
+        onPositionUpdate: (position) => this.updateWidgetPosition(config.id, position),
+        onSizeUpdate: (size) => this.updateWidgetSize(config.id, size),
+        onRemove: (widgetId) => this.removeWidget(widgetId),
+      });
+
+      // Восстанавливаем состояние виджета если есть
+      await this.restoreWidgetState(config.id, widgetInstance);
+
+      return widgetElement;
+    } catch (error) {
+      console.error(`Failed to render widget ${config.id}:`, error);
+
+      throw error;
+    }
+  }
+
+  isValidWidgetConfig(config) {
+    return (
+      config &&
+      config.id &&
+      config.type &&
+      config.position &&
+      config.size &&
+      typeof config.id === "string" &&
+      typeof config.type === "string" &&
+      typeof config.position.x === "number" &&
+      typeof config.position.y === "number" &&
+      typeof config.size.width === "number" &&
+      typeof config.size.height === "number"
+    );
+  }
+
+  async restoreWidgetState(widgetId, widgetInstance) {
+    try {
+      if (typeof widgetInstance.loadState === "function") {
+        await widgetInstance.loadState();
+      }
+
+      if (typeof widgetInstance.onStateRestored === "function") {
+        widgetInstance.onStateRestored();
+      }
+    } catch (error) {
+      console.warn(`Failed to restore state for widget ${widgetId}:`, error);
+    }
   }
 
   openWidgetModal() {
     const modal = document.getElementById("widgetModal");
-    modal.style.display = "block";
-    this.renderWidgetsList();
+    if (modal) {
+      modal.style.display = "block";
+      this.renderWidgetsList();
+    }
   }
 
   closeWidgetModal() {
     const modal = document.getElementById("widgetModal");
-    modal.style.display = "none";
+    if (modal) {
+      modal.style.display = "none";
+    }
   }
 
   renderWidgetsList() {
     const widgetsList = document.getElementById("widgetsList");
+    if (!widgetsList) return;
+
     const availableWidgets = this.widgetManager.getAvailableWidgets();
+
+    if (availableWidgets.length === 0) {
+      widgetsList.innerHTML = '<p class="no-widgets">Нет доступных виджетов</p>';
+      return;
+    }
 
     widgetsList.innerHTML = availableWidgets
       .map(
         (widget) => `
-      <div class="widget-item" data-type="${widget.type}">
-        <div class="widget-icon">${widget.icon}</div>
-        <h3>${widget.name}</h3>
-        <p>${widget.description}</p>
-      </div>
-    `
+        <div class="widget-item" data-type="${widget.type}">
+          <div class="widget-icon">${widget.icon}</div>
+          <div class="widget-info">
+            <h3>${widget.title}</h3>
+            <p>${widget.description}</p>
+          </div>
+        </div>
+      `
       )
       .join("");
-
-    // Добавляем обработчики выбора виджетов
-    document.querySelectorAll(".widget-item").forEach((item) => {
-      item.addEventListener("click", () => {
-        const type = item.dataset.type;
-        this.addWidget(type);
-        this.closeWidgetModal();
-      });
-    });
   }
 
   addWidget(type) {
-    const widgetConfig = {
-      id: Date.now().toString(),
-      type,
-      position: { x: 100, y: 100 },
-      size: { width: 300, height: 200 },
-    };
+    try {
+      const widgetConfig = {
+        id: this.generateWidgetId(),
+        type,
+        position: this.calculateNewWidgetPosition(),
+        size: { ...this.config.widgetDefaults.size },
+        createdAt: new Date().toISOString(),
+      };
 
-    this.widgets.push(widgetConfig);
-    this.saveWidgets();
-    this.renderWidget(widgetConfig);
+      this.widgets.push(widgetConfig);
+      this.saveWidgets();
+      this.renderWidget(widgetConfig);
+
+      // this.showNotification(`Виджет "${this.getWidgetTitle(type)}" добавлен`, "success");
+    } catch (error) {
+      console.error("Failed to add widget:", error);
+      this.showNotification("Ошибка добавления виджета", "error");
+    }
   }
 
-  renderWidget(config) {
-    const widgetsContainer = document.getElementById("widgetsContainer");
-    const widgetElement = document.createElement("div");
-    widgetElement.className = "widget";
-    widgetElement.id = `widget-${config.id}`;
-    widgetElement.style.width = `${config.size.width}px`;
-    widgetElement.style.height = `${config.size.height}px`;
-    widgetElement.style.left = `${config.position.x}px`;
-    widgetElement.style.top = `${config.position.y}px`;
+  generateWidgetId() {
+    return `widget_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
 
-    // Получаем экземпляр виджета и рендерим его
-    const widgetInstance = this.widgetManager.createWidget(config.type, config.id);
-    widgetElement.innerHTML = widgetInstance.render();
+  calculateNewWidgetPosition() {
+    // Позиционируем новый виджет так, чтобы он не перекрывал существующие
+    const existingWidgets = this.widgets;
+    const gridSize = 20;
+    let x = 20,
+      y = 20;
 
-    widgetsContainer.appendChild(widgetElement);
-
-    // Сохраняем экземпляр виджета
-    this.widgetInstances[config.id] = widgetInstance;
-
-    // Инициализируем виджет
-    widgetInstance.init();
-
-    // Добавляем обработчик для кнопки удаления
-    const removeBtn = widgetElement.querySelector('[data-action="remove"]');
-    if (removeBtn) {
-      removeBtn.addEventListener("click", () => this.removeWidget(config.id));
+    if (existingWidgets.length > 0) {
+      const lastWidget = existingWidgets[existingWidgets.length - 1];
+      x = lastWidget.position.x + 30;
+      y = lastWidget.position.y + 30;
     }
 
-    // Делаем виджет перетаскиваемым (только за заголовок) и изменяемым
-    this.makeWidgetDraggable(widgetElement, config.id);
-    this.makeWidgetResizable(widgetElement, config.id);
+    // Ограничиваем позицию размерами контейнера
+    const container = document.getElementById("widgetsContainer");
+    if (container) {
+      const containerRect = container.getBoundingClientRect();
+      x = Math.min(x, containerRect.width - this.config.widgetDefaults.size.width);
+      y = Math.min(y, containerRect.height - this.config.widgetDefaults.size.height);
+    }
+
+    return { x, y };
+  }
+
+  getWidgetTitle(type) {
+    const widgetClass = this.widgetManager.getWidgetClass(type);
+    return widgetClass ? widgetClass.title : type;
   }
 
   removeWidget(widgetId) {
-    // Удаляем виджет из DOM
-    const widgetElement = document.getElementById(`widget-${widgetId}`);
-    if (widgetElement) {
-      widgetElement.remove();
+    try {
+      // Удаляем из DOM
+      const widgetElement = document.getElementById(`widget-${widgetId}`);
+      if (widgetElement) {
+        widgetElement.remove();
+      }
+
+      // Вызываем destroy у экземпляра виджета
+      const widgetInstance = this.widgetInstances.get(widgetId);
+      if (widgetInstance) {
+        if (typeof widgetInstance.destroy === "function") {
+          widgetInstance.destroy();
+        }
+        this.widgetInstances.delete(widgetId);
+      }
+
+      // Удаляем из массива конфигураций
+      this.widgets = this.widgets.filter((widget) => widget.id !== widgetId);
+      this.saveWidgets();
+
+      // this.showNotification("Виджет удален", "info");
+    } catch (error) {
+      console.error("Failed to remove widget:", error);
+      this.showNotification("Ошибка удаления виджета", "error");
     }
-
-    // Вызываем метод destroy у экземпляра виджета
-    const widgetInstance = this.widgetInstances[widgetId];
-    if (widgetInstance && typeof widgetInstance.destroy === "function") {
-      widgetInstance.destroy();
-    }
-
-    // Удаляем виджет из хранилища экземпляров
-    delete this.widgetInstances[widgetId];
-
-    // Удаляем виджет из массива конфигураций
-    this.widgets = this.widgets.filter((widget) => widget.id !== widgetId);
-
-    // Сохраняем изменения
-    this.saveWidgets();
-  }
-
-  loadWidgets() {
-    this.widgets.forEach((widgetConfig) => {
-      this.renderWidget(widgetConfig);
-    });
-  }
-
-  makeWidgetDraggable(element, widgetId) {
-    // Находим заголовок виджета
-    const header = element.querySelector(".widget-header");
-    if (!header) return;
-
-    // Добавляем курсор перемещения к заголовку
-    header.style.cursor = "move";
-
-    let pos1 = 0,
-      pos2 = 0,
-      pos3 = 0,
-      pos4 = 0;
-    const container = document.getElementById("widgetsContainer");
-    const containerRect = container.getBoundingClientRect();
-
-    const dragMouseDown = (e) => {
-      e.preventDefault();
-      // Получаем позицию курсора при нажатии
-      pos3 = e.clientX;
-      pos4 = e.clientY;
-      document.addEventListener("mouseup", closeDragElement);
-      document.addEventListener("mousemove", elementDrag);
-    };
-
-    const elementDrag = (e) => {
-      e.preventDefault();
-      // Вычисляем новую позицию
-      pos1 = pos3 - e.clientX;
-      pos2 = pos4 - e.clientY;
-      pos3 = e.clientX;
-      pos4 = e.clientY;
-
-      // Вычисляем новые координаты
-      let newTop = element.offsetTop - pos2;
-      let newLeft = element.offsetLeft - pos1;
-
-      // Ограничиваем перемещение в пределах контейнера
-      const elementRect = element.getBoundingClientRect();
-      const maxTop = containerRect.height - elementRect.height;
-      const maxLeft = containerRect.width - elementRect.width;
-
-      newTop = Math.max(0, Math.min(newTop, maxTop));
-      newLeft = Math.max(0, Math.min(newLeft, maxLeft));
-
-      // Устанавливаем новую позицию
-      element.style.top = newTop + "px";
-      element.style.left = newLeft + "px";
-    };
-
-    const closeDragElement = () => {
-      // Удаляем обработчики событий
-      document.removeEventListener("mouseup", closeDragElement);
-      document.removeEventListener("mousemove", elementDrag);
-
-      // Сохраняем новую позицию
-      this.updateWidgetPosition(widgetId, {
-        x: parseInt(element.style.left) || 0,
-        y: parseInt(element.style.top) || 0,
-      });
-    };
-
-    header.addEventListener("mousedown", dragMouseDown);
-  }
-
-  makeWidgetResizable(element, widgetId) {
-    const handle = document.createElement("div");
-    handle.className = "resize-handle";
-    element.appendChild(handle);
-
-    let startX, startY, startWidth, startHeight;
-    const container = document.getElementById("widgetsContainer");
-    const containerRect = container.getBoundingClientRect();
-
-    // Объявляем функции заранее, чтобы избежать ошибок области видимости
-    const initResize = (e) => {
-      e.preventDefault();
-      startX = e.clientX;
-      startY = e.clientY;
-      startWidth = parseInt(document.defaultView.getComputedStyle(element).width, 10);
-      startHeight = parseInt(document.defaultView.getComputedStyle(element).height, 10);
-
-      document.addEventListener("mousemove", resize);
-      document.addEventListener("mouseup", stopResize);
-    };
-
-    const resize = (e) => {
-      const width = startWidth + (e.clientX - startX);
-      const height = startHeight + (e.clientY - startY);
-
-      // Ограничиваем размер виджета пределами контейнера
-      const elementRect = element.getBoundingClientRect();
-      const maxWidth = containerRect.width - element.offsetLeft;
-      const maxHeight = containerRect.height - element.offsetTop;
-
-      // Устанавливаем новый размер с ограничениями
-      element.style.width = `${Math.max(100, Math.min(width, maxWidth))}px`;
-      element.style.height = `${Math.max(100, Math.min(height, maxHeight))}px`;
-    };
-
-    const stopResize = () => {
-      document.removeEventListener("mousemove", resize);
-      document.removeEventListener("mouseup", stopResize);
-
-      // Сохраняем новый размер
-      this.updateWidgetSize(widgetId, {
-        width: parseInt(element.style.width),
-        height: parseInt(element.style.height),
-      });
-    };
-
-    handle.addEventListener("mousedown", initResize);
   }
 
   updateWidgetPosition(widgetId, position) {
@@ -337,6 +421,171 @@ export class Dashboard {
   }
 
   saveWidgets() {
-    localStorage.setItem("dashboard-widgets", JSON.stringify(this.widgets));
+    this.storageService.set("dashboard-widgets", this.widgets);
   }
+
+  applyTheme(themeName) {
+    document.documentElement.setAttribute("data-theme", themeName);
+
+    // Обновляем селектор темы если он есть
+    const themeSelector = document.getElementById("themeSelector");
+    if (themeSelector) {
+      themeSelector.value = themeName;
+    }
+  }
+
+  async retryLoadWidget(widgetId) {
+    const widgetConfig = this.widgets.find((w) => w.id === widgetId);
+    if (!widgetConfig) {
+      console.error(`Widget config not found for retry: ${widgetId}`);
+      return;
+    }
+
+    // Удаляем старый элемент ошибки
+    const oldElement = document.getElementById(`widget-${widgetId}`);
+    if (oldElement) {
+      oldElement.remove();
+    }
+
+    // Пытаемся загрузить заново
+    try {
+      await this.renderWidget(widgetConfig);
+      this.showNotification("Виджет успешно загружен", "success");
+    } catch (error) {
+      console.error(`Failed to retry loading widget ${widgetId}:`, error);
+      this.showNotification("Не удалось загрузить виджет", "error");
+    }
+  }
+
+  showNotification(message, type = "info") {
+    const notification = document.createElement("div");
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+      <span class="notification-icon">${this.getNotificationIcon(type)}</span>
+      <span class="notification-message">${message}</span>
+    `;
+
+    notification.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 16px;
+      background: ${this.getNotificationColor(type)};
+      color: white;
+      border-radius: 6px;
+      z-index: 10000;
+      animation: slideInRight 0.3s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: 300px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    `;
+
+    document.body.appendChild(notification);
+
+    // Автоматическое скрытие
+    setTimeout(() => {
+      notification.style.animation = "slideOutRight 0.3s ease";
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 300);
+    }, 4000);
+  }
+
+  getNotificationIcon(type) {
+    const icons = {
+      success: "✅",
+      error: "❌",
+      warning: "⚠️",
+      info: "ℹ️",
+    };
+    return icons[type] || "📢";
+  }
+
+  getNotificationColor(type) {
+    const colors = {
+      success: "#48bb78",
+      error: "#f56565",
+      warning: "#ed8936",
+      info: "#4299e1",
+    };
+    return colors[type] || "#4299e1";
+  }
+
+  handleWindowResize() {
+    // При изменении размера окна можно пересчитать позиции виджетов
+    // или выполнить другие responsive-действия
+    console.log("Window resized, dashboard layout might need adjustment");
+  }
+
+  showFatalError(error) {
+    this.container.innerHTML = `
+      <div class="fatal-error">
+        <div class="error-icon">💥</div>
+        <h2>Ошибка загрузки дашборда</h2>
+        <p>${error.message}</p>
+        <button class="btn-retry" onclick="window.location.reload()">Перезагрузить</button>
+      </div>
+    `;
+  }
+
+  // Публичные методы для внешнего использования
+  getWidgets() {
+    return [...this.widgets];
+  }
+
+  getWidgetInstance(widgetId) {
+    return this.widgetInstances.get(widgetId);
+  }
+
+  destroy() {
+    // Очистка ресурсов
+    this.widgetRenderer.destroy();
+
+    // Очистка всех виджетов
+    for (const [widgetId, instance] of this.widgetInstances) {
+      if (typeof instance.destroy === "function") {
+        instance.destroy();
+      }
+    }
+    this.widgetInstances.clear();
+
+    // Удаление обработчиков событий
+    this.container.innerHTML = "";
+
+    console.log("Dashboard destroyed");
+  }
+}
+
+// Добавляем CSS анимации если их нет
+if (!document.querySelector("#dashboard-styles")) {
+  const style = document.createElement("style");
+  style.id = "dashboard-styles";
+  style.textContent = `
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    @keyframes slideOutRight {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
+  `;
+  document.head.appendChild(style);
 }

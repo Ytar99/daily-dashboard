@@ -1,6 +1,18 @@
-import { Widget } from "../widget";
+import { Widget } from "../../widget";
+import templateHtml from "./template.html?raw";
+
+import "./styles.css";
+
+const templates = {
+  id: "{{id}}",
+};
 
 export class ClockWidget extends Widget {
+  static type = "clock";
+  static title = "Часы";
+  static description = "Отображает текущее время и дату";
+  static icon = "⏰";
+
   constructor(id) {
     super(id);
     this.loadState();
@@ -8,18 +20,7 @@ export class ClockWidget extends Widget {
   }
 
   render() {
-    return `
-      <div class="widget-header">
-        <div class="widget-title">Часы</div>
-        <div class="widget-actions">
-          <button class="widget-btn" data-action="remove">✕</button>
-        </div>
-      </div>
-      <div class="clock-widget">
-        <div class="time" id="time-${this.id}">00:00:00</div>
-        <div class="date" id="date-${this.id}">1 января 2023</div>
-      </div>
-    `;
+    return templateHtml.trim().replaceAll(templates.id, this.id);
   }
 
   init() {

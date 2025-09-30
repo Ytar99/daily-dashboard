@@ -3,8 +3,8 @@ export class WidgetManager {
     this.widgetTypes = {};
   }
 
-  registerWidget(type, widgetClass) {
-    this.widgetTypes[type] = widgetClass;
+  registerWidget(widgetClass) {
+    this.widgetTypes[widgetClass.type] = widgetClass;
   }
 
   createWidget(type, id) {
@@ -15,26 +15,16 @@ export class WidgetManager {
     return new WidgetClass(id);
   }
 
+  getWidgetClass(type) {
+    return this.widgetTypes[type];
+  }
+
   getAvailableWidgets() {
-    return [
-      {
-        type: "example",
-        name: "Пример",
-        description: "Простой пример виджета",
-        icon: "📦",
-      },
-      {
-        type: "clock",
-        name: "Часы",
-        description: "Отображает текущее время и дату",
-        icon: "⏰",
-      },
-      {
-        type: "isPalindrome",
-        name: "Проверка на палиндром",
-        description: "Проверяет, является ли строка палиндромом",
-        icon: "🔎",
-      },
-    ];
+    return Object.values(this.widgetTypes).map(({ type = "", title = "", description = "", icon = "" }) => ({
+      type,
+      title,
+      description,
+      icon,
+    }));
   }
 }

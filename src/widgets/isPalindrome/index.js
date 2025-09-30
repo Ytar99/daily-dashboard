@@ -1,4 +1,5 @@
-import { Widget } from "../widget";
+import { Widget } from "../../widget";
+import templateHtml from "./template.html?raw";
 
 function isPalindrome(str) {
   // Удаляем все не-буквенно-цифровые символы и приводим к нижнему регистру
@@ -8,26 +9,23 @@ function isPalindrome(str) {
   return cleanedStr === cleanedStr.split("").reverse().join("");
 }
 
+const templates = {
+  id: "{{id}}",
+};
+
 export class PalindromeWidget extends Widget {
+  static type = "isPalindrome";
+  static title = "Проверка на палиндром";
+  static description = "Проверяет является ли введенная строка палиндромом";
+  static icon = "🔎";
+
   constructor(id) {
     super(id);
     this.loadState();
   }
 
   render() {
-    return `
-      <div class="widget-header">
-        <div class="widget-title">Проверка на палиндром</div>
-        <div class="widget-actions">
-          <button class="widget-btn" data-action="remove">✕</button>
-        </div>
-      </div>
-      <div class="palindrome-widget">
-        <input style="width: 100%" type="text" id="input-${this.id}">
-        <button id="check-${this.id}">Проверить</button>
-        <div id="result-${this.id}"></div>
-      </div>
-    `;
+    return templateHtml.trim().replaceAll(templates.id, this.id);
   }
 
   init() {

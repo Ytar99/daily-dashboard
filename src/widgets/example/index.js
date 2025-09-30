@@ -1,6 +1,12 @@
-import { Widget } from "../widget";
+import { Widget } from "../../widget";
+import templateHtml from "./template.html?raw";
 
 export class ExampleWidget extends Widget {
+  static type = "example";
+  static title = "Пример";
+  static description = "Простой пример виджета";
+  static icon = "📦";
+
   constructor(id) {
     // это нужно для того, чтобы сохранять состояние виджета в памяти браузера
     super(id);
@@ -8,13 +14,8 @@ export class ExampleWidget extends Widget {
   }
 
   render() {
-    return `
-      <div>
-        <p>Я тестовый виджет</p>
-        <button data-action="remove">Закрыть</button>
-        <button id="hello-btn">Привет!</button>
-      </div>
-    `;
+    btn.abc();
+    return templateHtml.trim();
   }
 
   init() {
