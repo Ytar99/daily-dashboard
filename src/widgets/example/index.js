@@ -14,7 +14,6 @@ export class ExampleWidget extends Widget {
   }
 
   render() {
-    btn.abc();
     return templateHtml.trim();
   }
 
